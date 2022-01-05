@@ -66,4 +66,3 @@ class BpmnPrinter:
 bpnm_diagram = BpmnDiagramGraph()
 bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
 printer = BpmnPrinter(bpnm_diagram)
-print(printer.print())
