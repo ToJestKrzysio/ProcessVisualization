@@ -1,6 +1,8 @@
+import base64
 import datetime
 
 from jinja2 import FileSystemLoader, Environment
+import pdfkit
 
 from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
 
@@ -16,25 +18,51 @@ class ReportGenerator:
         self.context_generator = ContextGenerator(self.diagram)
         self.report_path = "reports"
 
-    def generate(self):
+    def generate_html_report(self, save=True):
         context = self.get_context()
         rendered_template = self.template.render(**context)
 
-        with open(self.get_report_path(), "w") as fh:
-            fh.write(rendered_template)
+        if save:
+            with open(self.get_html_report_path(), "w") as html_file:
+                html_file.write(rendered_template)
+        return rendered_template
 
-    def get_report_path(self) -> str:
+    def get_base_path(self) -> str:
         date = datetime.date.today().strftime("%d_%m_%Y")
-        return f"{self.report_path}/report_{date}.html"
+        return f"{self.report_path}/report_{date}"
 
-    def get_image_name(self) -> str:
-        date = datetime.date.today().strftime("%d_%m_%Y")
-        return f"{self.report_path}/report_{date}_image.jpg"
+    def get_html_report_path(self) -> str:
+        return f"{self.get_base_path()}.html"
+
+    def get_pdf_report_path(self) -> str:
+        return f"{self.get_base_path()}.pdf"
+
+    def get_image_path(self) -> str:
+        return f"{self.get_base_path()}_image.jpg"
+
+    def encode_image(self) -> str:
+        image_path = self.get_image_path()
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("UTF-8")
 
     def get_context(self):
         context = self.context_generator.get_context()
-        context["model_image"] = self.get_image_name()
+        context["encoded_image"] = self.encode_image()
         return context
+
+    def generate_pdf_report(self):
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.35in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+            'no-outline': None,
+            'enable-local-file-access': None
+        }
+        html_file = self.generate_html_report(save=False)
+        pdfkit.from_string(html_file, self.get_pdf_report_path(), options=options)
 
 
 class ContextGenerator:
@@ -104,4 +132,5 @@ if __name__ == '__main__':
     bpnm_diagram = BpmnDiagramGraph()
     bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
     report_generator = ReportGenerator(bpnm_diagram)
-    report_generator.generate()
+    # report_generator.generate_html_report()
+    report_generator.generate_pdf_report()
