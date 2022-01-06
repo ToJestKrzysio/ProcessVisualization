@@ -5,6 +5,7 @@ from jinja2 import FileSystemLoader, Environment
 import pdfkit
 
 from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
+from src.visualizer import DiagramVisualizer
 
 
 class ReportGenerator:
@@ -17,31 +18,37 @@ class ReportGenerator:
         self.template = self.env.get_template(self.template_name)
         self.context_generator = ContextGenerator(self.diagram)
         self.report_path = "reports"
+        self.visualizer = DiagramVisualizer(self.diagram)
 
     def generate_html_report(self, save=True):
+        self.visualizer.generate_image(self.image_path)
         context = self.get_context()
         rendered_template = self.template.render(**context)
 
         if save:
-            with open(self.get_html_report_path(), "w") as html_file:
+            with open(self.html_report_path, "w") as html_file:
                 html_file.write(rendered_template)
         return rendered_template
 
-    def get_base_path(self) -> str:
+    @property
+    def base_path(self) -> str:
         date = datetime.date.today().strftime("%d_%m_%Y")
         return f"{self.report_path}/report_{date}"
 
-    def get_html_report_path(self) -> str:
-        return f"{self.get_base_path()}.html"
+    @property
+    def html_report_path(self) -> str:
+        return f"{self.base_path}.html"
 
-    def get_pdf_report_path(self) -> str:
-        return f"{self.get_base_path()}.pdf"
+    @property
+    def pdf_report_path(self) -> str:
+        return f"{self.base_path}.pdf"
 
-    def get_image_path(self) -> str:
-        return f"{self.get_base_path()}_image.jpg"
+    @property
+    def image_path(self) -> str:
+        return f"{self.base_path}_image.png"
 
     def encode_image(self) -> str:
-        image_path = self.get_image_path()
+        image_path = self.image_path
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("UTF-8")
 
@@ -62,7 +69,7 @@ class ReportGenerator:
             'enable-local-file-access': None
         }
         html_file = self.generate_html_report(save=False)
-        pdfkit.from_string(html_file, self.get_pdf_report_path(), options=options)
+        pdfkit.from_string(html_file, self.pdf_report_path, options=options)
 
 
 class ContextGenerator:
