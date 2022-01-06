@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import datetime
 
@@ -19,6 +21,12 @@ class ReportGenerator:
         self.context_generator = ContextGenerator(self.diagram)
         self.report_path = "reports"
         self.visualizer = DiagramVisualizer(self.diagram)
+
+    @staticmethod
+    def from_file(file_path: str) -> ReportGenerator:
+        diagram = BpmnDiagramGraph()
+        diagram.load_diagram_from_xml_file(file_path)
+        return ReportGenerator(diagram)
 
     def generate_html_report(self, save=True):
         self.visualizer.generate_image(self.image_path)
@@ -136,8 +144,6 @@ class ContextGenerator:
 
 
 if __name__ == '__main__':
-    bpnm_diagram = BpmnDiagramGraph()
-    bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
-    report_generator = ReportGenerator(bpnm_diagram)
+    report_generator = ReportGenerator.from_file("../examples/01_Obsluga_zgloszen.bpmn")
     # report_generator.generate_html_report()
     report_generator.generate_pdf_report()
