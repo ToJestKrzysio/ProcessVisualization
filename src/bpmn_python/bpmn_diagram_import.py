@@ -177,16 +177,13 @@ class BpmnDiagramGraphImport(object):
 
             for element in utils.BpmnImportUtils.iterate_elements(process_element):
                 if element.nodeType != element.TEXT_NODE:
-                    # TODO fix skipping text fields
-                    print(element.tagName)
+                    # TODO fix skipping text fields - somewhat done
                     tag_name = utils.BpmnImportUtils.remove_namespace_from_tag_name(
                         element.tagName)
                     BpmnDiagramGraphImport.__import_element_by_tag_name(diagram_graph,
                                                                         sequence_flows, process_id,
                                                                         process_attributes,
                                                                         element, tag_name)
-                else:
-                    print(element)
 
             for flow in utils.BpmnImportUtils.iterate_elements(process_element):
                 if flow.nodeType != flow.TEXT_NODE:
@@ -201,7 +198,8 @@ class BpmnDiagramGraphImport(object):
     def __import_element_by_tag_name(diagram_graph, sequence_flows, process_id, process_attributes,
                                      element, tag_name):
         if tag_name in (consts.Consts.task, consts.Consts.user_task, consts.Consts.service_task,
-                        consts.Consts.manual_task):
+                        consts.Consts.manual_task, consts.Consts.send_task,
+                        consts.Consts.call_activity):
             BpmnDiagramGraphImport.import_task_to_graph(diagram_graph, process_id,
                                                         process_attributes, element)
         elif tag_name == consts.Consts.subprocess:
@@ -391,44 +389,51 @@ class BpmnDiagramGraphImport(object):
             imported flow node,
         :param flow_node_element: object representing a BPMN XML element corresponding to given flownode,
         """
+        default_message = "No information provided."
+
+        def get_attribute(name_constant: str) -> str:
+            """ Retrieves flow_node_element attribute data or returns empty string. """
+            if flow_node_element.hasAttribute(name_constant):
+                return flow_node_element.getAttribute(name_constant)
+            return ""
+
+        def set_node_attribute(name_constant: str,
+                               default: str = default_message) -> None:
+            """ Sets bpmn_graph._node value of appropriate field. """
+            value = get_attribute(name_constant) or default
+            bpmn_graph._node[element_id][name_constant] = value
+
         element_id = flow_node_element.getAttribute(consts.Consts.id)
         type_ = utils.BpmnImportUtils.remove_namespace_from_tag_name(flow_node_element.tagName)
-        node_name = (flow_node_element.getAttribute(consts.Consts.name)
-                     if flow_node_element.hasAttribute(consts.Consts.name) else "")
-        implementation = (flow_node_element.getAttribute(consts.Consts.implementation)
-                          if flow_node_element.hasAttribute(consts.Consts.implementation)
-                          else None)
         bpmn_graph.add_node(element_id)
-
         bpmn_graph._node[element_id][consts.Consts.id] = element_id
         bpmn_graph._node[element_id][consts.Consts.type] = type_
-        bpmn_graph._node[element_id][consts.Consts.node_name] = node_name
         bpmn_graph._node[element_id][consts.Consts.process] = process_id
-        bpmn_graph._node[element_id][consts.Consts.implementation] = implementation
+        bpmn_graph._node[element_id][consts.Consts.node_name] = get_attribute(consts.Consts.name)
+        set_node_attribute(consts.Consts.implementation)
+        set_node_attribute(consts.Consts.compensation)
+        set_node_attribute(consts.Consts.quantity)
 
         process_attributes[consts.Consts.node_ids].append(element_id)
 
-        # add incoming flow node list
-        incoming_list = []
+        incoming_list, outgoing_list, documentation = [], [], default_message
         for tmp_element in utils.BpmnImportUtils.iterate_elements(flow_node_element):
             if tmp_element.nodeType != tmp_element.TEXT_NODE:
                 tag_name = utils.BpmnImportUtils.remove_namespace_from_tag_name(
                     tmp_element.tagName)
                 if tag_name == consts.Consts.incoming_flow:
-                    incoming_value = tmp_element.firstChild.nodeValue
-                    incoming_list.append(incoming_value)
-        bpmn_graph._node[element_id][consts.Consts.incoming_flow] = incoming_list
-
-        # add outgoing flow node list
-        outgoing_list = []
-        for tmp_element in utils.BpmnImportUtils.iterate_elements(flow_node_element):
-            if tmp_element.nodeType != tmp_element.TEXT_NODE:
-                tag_name = utils.BpmnImportUtils.remove_namespace_from_tag_name(
-                    tmp_element.tagName)
+                    incoming_list.append(tmp_element.firstChild.nodeValue)
+                    continue
                 if tag_name == consts.Consts.outgoing_flow:
-                    outgoing_value = tmp_element.firstChild.nodeValue
-                    outgoing_list.append(outgoing_value)
+                    outgoing_list.append(tmp_element.firstChild.nodeValue)
+                    continue
+                if tag_name == consts.Consts.documentation:
+                    documentation = tmp_element.firstChild.nodeValue
+                    continue
+
+        bpmn_graph._node[element_id][consts.Consts.incoming_flow] = incoming_list
         bpmn_graph._node[element_id][consts.Consts.outgoing_flow] = outgoing_list
+        bpmn_graph._node[element_id][consts.Consts.documentation] = documentation
 
     @staticmethod
     def import_task_to_graph(diagram_graph, process_id, process_attributes, task_element):

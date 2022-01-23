@@ -64,16 +64,8 @@ class BpmnPrinter:
 
     def get_nodes_details(self):
         nodes = self.diagram.get_nodes()
-        nod = iter(nodes)
-        # next(nod)
-        # next(nod)
-        next(nod)
-        print(next(nod))
-        quit()
-        nodes_map = {}
         for node in nodes:
-            pass
-            # nodes_map[node.]
+            print(node, "\n\n")
 
 
 

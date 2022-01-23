@@ -34,6 +34,8 @@ class Consts(object):
     message_flow = "messageFlow"
     message_flows = "messageFlows"
     implementation = "implementation"
+    compensation = "isForCompensation"
+    quantity = "startQuantity"
 
     # CSV literals
     csv_order = "Order"
@@ -65,6 +67,8 @@ class Consts(object):
     flow_node_refs = "flowNodeRefs"
     task = "task"
     user_task = "userTask"
+    send_task = "sendTask"
+    call_activity = "callActivity"
     service_task = "serviceTask"
     manual_task = "manualTask"
     subprocess = "subProcess"
@@ -91,6 +95,7 @@ class Consts(object):
     outgoing_flow_list = "outgoing_flow_list"
     waypoint = "waypoint"
     waypoints = "waypoints"
+    documentation = "documentation"
 
     # Additional parameter names
     type = "type"
