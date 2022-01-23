@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import datetime
+import os.path
 
 from jinja2 import FileSystemLoader, Environment
 import pdfkit
@@ -19,9 +20,11 @@ class ReportGenerator:
         self.env = Environment(loader=self.file_loader)
         self.template_name = "bpmn_report.html"
         self.template = self.env.get_template(self.template_name)
-        self.context_generator = ContextGenerator(self.diagram)
         self.report_path = "reports"
+        self.context_generator = ContextGenerator(self.diagram)
         self.visualizer = DiagramVisualizer(self.diagram)
+        if not os.path.exists(self.report_path):
+            os.mkdir(self.report_path)
 
     @staticmethod
     def from_file(file_path: str) -> ReportGenerator:
@@ -163,9 +166,15 @@ class ContextGenerator:
         return nodes_data
 
 
-if __name__ == '__main__':
-    report_generator = ReportGenerator.from_file("../examples/01_Obsluga_zgloszen.bpmn")
-    # context_generator = report_generator.context_generator
-    # nodes = context_generator.get_nodes()
-    # report_generator.generate_html_report()
+def generate_pdf_report(bpmn_file: str) -> None:
+    report_generator = ReportGenerator.from_file(bpmn_file)
     report_generator.generate_pdf_report()
+
+
+def generate_html_report(bpmn_file: str) -> None:
+    report_generator = ReportGenerator.from_file(bpmn_file)
+    report_generator.generate_html_report()
+
+
+if __name__ == '__main__':
+    generate_pdf_report("../examples/01_Obsluga_zgloszen.bpmn")
