@@ -33,6 +33,7 @@ class Consts(object):
     condition_expression = "conditionExpression"
     message_flow = "messageFlow"
     message_flows = "messageFlows"
+    implementation = "implementation"
 
     # CSV literals
     csv_order = "Order"

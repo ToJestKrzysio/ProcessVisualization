@@ -62,7 +62,25 @@ class BpmnPrinter:
             labels[node[0]] = node[1].get("node_name", "").replace("\n", " ")
         return labels
 
+    def get_nodes_details(self):
+        nodes = self.diagram.get_nodes()
+        nod = iter(nodes)
+        # next(nod)
+        # next(nod)
+        next(nod)
+        print(next(nod))
+        quit()
+        nodes_map = {}
+        for node in nodes:
+            pass
+            # nodes_map[node.]
 
-bpnm_diagram = BpmnDiagramGraph()
-bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
-printer = BpmnPrinter(bpnm_diagram)
+
+
+
+if __name__ == '__main__':
+    bpnm_diagram = BpmnDiagramGraph()
+    bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
+    printer = BpmnPrinter(bpnm_diagram)
+    # print(printer.print())
+    printer.get_nodes_details()
