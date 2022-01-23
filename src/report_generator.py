@@ -6,6 +6,7 @@ import datetime
 from jinja2 import FileSystemLoader, Environment
 import pdfkit
 
+import bpmn_python.bpmn_python_consts as consts
 from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
 from src.visualizer import DiagramVisualizer
 
@@ -97,7 +98,7 @@ class ContextGenerator:
 
     def get_context(self):
         context_names = ["start_events", "end_events", "processes", "gates", "edges",
-                         "model_title"]
+                         "model_title", "nodes"]
         context = {}
         for context_name in context_names:
             context[context_name] = getattr(self, f"get_{context_name}")()
@@ -142,8 +143,29 @@ class ContextGenerator:
         node_ids = self.diagram.get_nodes_id_list_by_type(node_type)
         return tuple(self.id_mappings[node_id] for node_id in node_ids)
 
+    def get_nodes(self):
+        nodes = self.diagram.get_nodes()
+        nodes_data = []
+        for _, node_dict in nodes:
+            name = node_dict.get(consts.Consts.node_name, "")
+            keys_to_remove = (consts.Consts.width, consts.Consts.height, consts.Consts.x,
+                              consts.Consts.y, consts.Consts.node_name)
+            for key in keys_to_remove:
+                try:
+                    del node_dict[key]
+                except KeyError:
+                    pass
+            for key, value in node_dict.items():
+                if isinstance(value, (list, tuple, set)):
+                    value = ", ".join(value)
+                node_dict[key] = value or "No data provided."
+            nodes_data.append((name, node_dict))
+        return nodes_data
+
 
 if __name__ == '__main__':
     report_generator = ReportGenerator.from_file("../examples/01_Obsluga_zgloszen.bpmn")
+    # context_generator = report_generator.context_generator
+    # nodes = context_generator.get_nodes()
     # report_generator.generate_html_report()
     report_generator.generate_pdf_report()

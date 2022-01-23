@@ -1,4 +1,5 @@
 from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
+import bpmn_python.bpmn_python_consts as consts
 
 
 class BpmnPrinter:
@@ -16,6 +17,7 @@ class BpmnPrinter:
         )
         lines.append(self.get_nodes_representation(nodes))
         lines.append(self.get_edges_representation())
+        lines.append(self.get_nodes_details())
         return "\n".join(lines)
 
     def get_nodes_representation(self, nodes: list | tuple) -> str:
@@ -63,16 +65,36 @@ class BpmnPrinter:
         return labels
 
     def get_nodes_details(self):
+        nodes_data = self.get_nodes_data()
+        nodes = []
+        for node_data in nodes_data:
+            lines = [f"Node name: {node_data.pop('node_name')}"]
+            for key, value in node_data.items():
+                value = str(value)
+                line = f"\t{key:>20} {value:>60}"
+                lines.append(line)
+            nodes.append("\n".join(lines))
+        return "\n\n".join(nodes)
+
+    def get_nodes_data(self):
         nodes = self.diagram.get_nodes()
-        for node in nodes:
-            print(node, "\n\n")
-
-
-
+        nodes_data = []
+        for node_id, node_dict in nodes:
+            keys_to_remove = (consts.Consts.width, consts.Consts.height, consts.Consts.x,
+                              consts.Consts.y)
+            for key in keys_to_remove:
+                try:
+                    del node_dict[key]
+                except KeyError:
+                    pass
+            for key, value in node_dict.items():
+                node_dict[key] = value or "No data provided."
+            nodes_data.append(node_dict)
+        return nodes_data
 
 if __name__ == '__main__':
     bpnm_diagram = BpmnDiagramGraph()
     bpnm_diagram.load_diagram_from_xml_file("../examples/01_Obsluga_zgloszen.bpmn")
     printer = BpmnPrinter(bpnm_diagram)
-    # print(printer.print())
-    printer.get_nodes_details()
+    print(printer.print())
+    # printer.get_nodes_details()

@@ -29,6 +29,11 @@
           margin-top: 1.2rem;
       }
 
+      .items .items.items__subtitle {
+          font-size: 1.3rem;
+          margin-top: 1.2rem;
+      }
+
       .items .items.items_list {
 
       }
@@ -44,6 +49,10 @@
       .items .items.items_table {
           border: 1px solid dimgray;
           border-collapse: collapse;
+          margin-bottom: 2rem;
+          width: 100%;
+          table-layout: fixed;
+          page-break-inside: avoid;
       }
 
       .items .items_table__row {
@@ -80,6 +89,16 @@
 
       }
 
+      @media print {
+          .new-page {
+              page-break-before: always;
+          }
+      }
+
+      .avoid-break {
+          page-break-inside: avoid;
+      }
+
   </style>
 </head>
 <body>
@@ -87,80 +106,110 @@
 <h1 class="report__hdl">BPMN model report for {{ model_title }}</h1>
 <p class="report__dsc">Provided model consist of the following:</p>
 <div class="items">
+  <div class="avoid-breaks">
+    <h2 class="items items__hdl">Start Events:</h2>
+    {% if start_events %}
+      <ol class="items items_list">
+        {% for start_event in start_events %}
+          <li class="items items_list__item">{{ start_event }}</li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <h4 class="items items__missing">No start events present</h4>
+    {% endif %}
+  </div>
 
-  <h2 class="items items__hdl">Start Events:</h2>
-  {% if start_events %}
-    <ol class="items items_list">
-      {% for start_event in start_events %}
-        <li class="items items_list__item">{{ start_event }}</li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <h4 class="items items__missing">No start events present</h4>
-  {% endif %}
+  <div class="avoid-breaks">
+    <h2 class="items items__hdl">End Events:</h2>
+    {% if end_events %}
+      <ol class="items items_list">
+        {% for end_event in end_events %}
+          <li class="items items_list__item">{{ end_event }}</li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <h4 class="items items__missing">No end events present</h4>
+    {% endif %}
+  </div>
 
-  <h2 class="items items__hdl">End Events:</h2>
-  {% if end_events %}
-    <ol class="items items_list">
-      {% for end_event in end_events %}
-        <li class="items items_list__item">{{ end_event }}</li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <h4 class="items items__missing">No end events present</h4>
-  {% endif %}
+  <div class="avoid-breaks">
+    <h2 class="items items__hdl">Processes:</h2>
+    {% if processes %}
+      <ol class="items items_list">
+        {% for process in processes %}
+          <li class="items items_list__item">{{ process }}</li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <h4 class="items items__missing">No processes present</h4>
+    {% endif %}
+  </div>
 
-  <h2 class="items items__hdl">Processes:</h2>
-  {% if processes %}
-    <ol class="items items_list">
-      {% for process in processes %}
-        <li class="items items_list__item">{{ process }}</li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <h4 class="items items__missing">No processes present</h4>
-  {% endif %}
+  <div class="avoid-breaks">
+    <h2 class="items items__hdl">Gates:</h2>
+    {% if gates %}
+      <ol class="items items_list">
+        {% for gate in gates %}
+          <li class="items items_list__item">{{ gate }}</li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <h4>No gates present</h4>
+    {% endif %}
+  </div>
 
-
-  <h2 class="items items__hdl">Gates:</h2>
-  {% if gates %}
-    <ol class="items items_list">
-      {% for gate in gates %}
-        <li class="items items_list__item">{{ gate }}</li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <h4>No gates present</h4>
-  {% endif %}
-
-  <h2 class="items items__hdl">Edges:</h2>
-  {% if edges %}
-    <table class="items items_table">
-      <tr class="items items_table__row">
-        <th class="items items_table__header">Edge Name</th>
-        <th class="items items_table__header">Start</th>
-        <th class="items items_table__header">End</th>
-      </tr>
-      {% for edge in edges %}
+  <div class="avoid-break">
+    <h2 class="items items__hdl">Edges:</h2>
+    {% if edges %}
+      <table class="items items_table">
         <tr class="items items_table__row">
-          <td class="items items_table__cell">{{ edge["edge"] }}</td>
-          <td class="items items_table__cell">{{ edge["start"] }}</td>
-          <td class="items items_table__cell">{{ edge["end"] }}</td>
+          <th class="items items_table__header">Edge Name</th>
+          <th class="items items_table__header">Start</th>
+          <th class="items items_table__header">End</th>
         </tr>
-      {% endfor %}
-    </table>
-  {% else %}
-    <h4 class="items items__missing">No edges present</h4>
-  {% endif %}
-
-
+        {% for edge in edges %}
+          <tr class="items items_table__row">
+            <td class="items items_table__cell">{{ edge["edge"] }}</td>
+            <td class="items items_table__cell">{{ edge["start"] }}</td>
+            <td class="items items_table__cell">{{ edge["end"] }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <h4 class="items items__missing">No edges present.</h4>
+    {% endif %}
+  </div>
 </div>
-<div class="diagram">
+
+<div class="items new-page">
+  <h2 class="items items__hdl">Nodes:</h2>
+  {% if nodes %}
+    {% for node_name, node in nodes %}
+      {% if node %}
+        <div class="avoid-break">
+          <h3 class="items items__subtitle">{{ node_name }}</h3>
+          <table class="items items_table">
+            {% for field_name, field_value in node.items() %}
+              <tr class="items items_table__row">
+              <td class="items items_table__cell">{{ field_name }}</td>
+              <td class="items items_table__cell">{{ field_value }}</td>
+            {% endfor %}
+          </table>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <h4 class="items items__missing">No nodes present.</h4>
+  {% endif %}
+</div>
+
+<div class="diagram new-page">
   <h2 class="diagram diagram__hdl">Model of the process.</h2>
   <p class="diagram diagram__dsc">
     The following image presents diagram created using provided BPMN model.
   </p>
-  <img src="data:image/png;base64,{{ encoded_image }}" alt="Process diagram" class="diagram diagram__img">
+  <img src="data:image/png;base64,{{ encoded_image }}" alt="Process diagram"
+       class="diagram diagram__img">
 </div>
 </body>
 </html>

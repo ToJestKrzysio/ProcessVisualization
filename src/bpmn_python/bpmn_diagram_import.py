@@ -389,7 +389,7 @@ class BpmnDiagramGraphImport(object):
             imported flow node,
         :param flow_node_element: object representing a BPMN XML element corresponding to given flownode,
         """
-        default_message = "No information provided."
+        default_message = "No data provided."
 
         def get_attribute(name_constant: str) -> str:
             """ Retrieves flow_node_element attribute data or returns empty string. """
