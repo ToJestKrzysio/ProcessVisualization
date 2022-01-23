@@ -9,15 +9,18 @@ import matplotlib.pyplot as plt
 
 
 class DiagramVisualizer:
+    """ Class handling generation of BPMN model graphical representation. """
 
     def __init__(self, bpmn_diagram: BpmnDiagramGraph):
         self.diagram = bpmn_diagram
 
     def generate_image(self, image_path: str) -> None:
+        """ Creates and saves image of the BPMN model to image_path. """
         figure = self.generate_diagram_figure()
         figure.savefig(image_path)
 
     def generate_diagram_figure(self):
+        """ Generates graphical representation of the BPMN model. """
         g = self.diagram.diagram_graph
         pos = self.diagram.get_nodes_positions()
 

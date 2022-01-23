@@ -13,6 +13,7 @@ from src.visualizer import DiagramVisualizer
 
 
 class ReportGenerator:
+    """ Class handling task related to generation of the reports. """
 
     def __init__(self, bpmn_diagram: BpmnDiagramGraph):
         self.diagram = bpmn_diagram
@@ -26,13 +27,18 @@ class ReportGenerator:
         if not os.path.exists(self.report_path):
             os.mkdir(self.report_path)
 
-    @staticmethod
-    def from_file(file_path: str) -> ReportGenerator:
+    @classmethod
+    def from_file(cls, file_path: str) -> ReportGenerator:
+        """ Loads BPMN model form .xml/.bpmn file and returns new instance of ReportGenerator. """
         diagram = BpmnDiagramGraph()
         diagram.load_diagram_from_xml_file(file_path)
-        return ReportGenerator(diagram)
+        return cls(diagram)
 
-    def generate_html_report(self, save=True):
+    def generate_html_report(self, save=True) -> str:
+        """
+        Renders html report using context data, may save report to html_report_path.
+        Returns rendered report as a string.
+        """
         self.visualizer.generate_image(self.image_path)
         context = self.get_context()
         rendered_template = self.template.render(**context)
@@ -42,34 +48,11 @@ class ReportGenerator:
                 html_file.write(rendered_template)
         return rendered_template
 
-    @property
-    def base_path(self) -> str:
-        date = datetime.date.today().strftime("%d_%m_%Y")
-        return f"{self.report_path}/report_{date}"
-
-    @property
-    def html_report_path(self) -> str:
-        return f"{self.base_path}.html"
-
-    @property
-    def pdf_report_path(self) -> str:
-        return f"{self.base_path}.pdf"
-
-    @property
-    def image_path(self) -> str:
-        return f"{self.base_path}_image.png"
-
-    def encode_image(self) -> str:
-        image_path = self.image_path
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("UTF-8")
-
-    def get_context(self):
-        context = self.context_generator.get_context()
-        context["encoded_image"] = self.encode_image()
-        return context
-
-    def generate_pdf_report(self):
+    def generate_pdf_report(self) -> None:
+        """
+        Generates pdf report using string representation of html_report and saves it to
+        pdf_report_path.
+        """
         options = {
             'page-size': 'A4',
             'margin-top': '0.35in',
@@ -83,14 +66,60 @@ class ReportGenerator:
         html_file = self.generate_html_report(save=False)
         pdfkit.from_string(html_file, self.pdf_report_path, options=options)
 
+    @property
+    def base_path(self) -> str:
+        """
+        Base path used for saving all reports.
+        Every report name contains date of report generation.
+        """
+        date = datetime.date.today().strftime("%d_%m_%Y")
+        return f"{self.report_path}/report_{date}"
+
+    @property
+    def html_report_path(self) -> str:
+        """ Path used for saving html reports. """
+        return f"{self.base_path}.html"
+
+    @property
+    def pdf_report_path(self) -> str:
+        """ Path used for saving pdf reports. """
+        return f"{self.base_path}.pdf"
+
+    @property
+    def image_path(self) -> str:
+        """ Path used for saving graphical model representation. """
+        return f"{self.base_path}_image.png"
+
+    def encode_image(self) -> str:
+        """ Encodes image to base64, to allow for embedding into html or pdf report. """
+        with open(self.image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("UTF-8")
+
+    def get_context(self):
+        """ Generates context used during image generation. """
+        context = self.context_generator.get_context()
+        context["encoded_image"] = self.encode_image()
+        return context
+
 
 class ContextGenerator:
+    """ Class handling generation of context data from BpmnDiagramGraph. """
 
     def __init__(self, bpmn_diagram: BpmnDiagramGraph):
         self.diagram = bpmn_diagram
         self.id_mappings = self.get_id_mappings()
 
+    def get_context(self) -> dict:
+        """
+        Generates context content by calling methods inside context_names with 'get_' suffix.
+        """
+        context_names = ["start_events", "end_events", "processes", "gates", "edges",
+                         "model_title", "nodes"]
+        return {context_name: getattr(self, f"get_{context_name}")()
+                for context_name in context_names}
+
     def get_id_mappings(self) -> dict:
+        """ Generates dictionary, mapping ids to node names. """
         labels = {}
         graph = self.diagram.diagram_graph
         for edge in graph.edges(data=True):
@@ -99,24 +128,20 @@ class ContextGenerator:
             labels[node[0]] = node[1].get("node_name", "").replace("\n", " ")
         return labels
 
-    def get_context(self):
-        context_names = ["start_events", "end_events", "processes", "gates", "edges",
-                         "model_title", "nodes"]
-        context = {}
-        for context_name in context_names:
-            context[context_name] = getattr(self, f"get_{context_name}")()
-        return context
-
     def get_model_title(self) -> str:
+        """ Returns the name of the model. """
         return next(iter(self.diagram.process_elements))
 
     def get_start_events(self) -> tuple:
+        """ Returns tuple of start events names. """
         return self.get_node_names_of_type("startEvent")
 
     def get_end_events(self) -> tuple:
+        """ Returns tuple of end events names. """
         return self.get_node_names_of_type("endEvent")
 
     def get_processes(self) -> tuple:
+        """ Returns tuple of all process names. """
         labels = ["task", "process", "subProcess", "intermediateCatchEvent",
                   "intermediateThrowEvent", "boundaryEvent"]
         results = []
@@ -125,6 +150,7 @@ class ContextGenerator:
         return tuple(results)
 
     def get_gates(self) -> tuple:
+        """ Returns tuple of all gate names. """
         labels = ["complexGateway", "eventBasedGateway", "inclusiveGateway", "exclusiveGateway",
                   "parallelGateway"]
         results = []
@@ -132,7 +158,8 @@ class ContextGenerator:
             results.extend(self.get_node_names_of_type(label))
         return tuple(results)
 
-    def get_edges(self) -> tuple:
+    def get_edges(self) -> tuple[dict[str, str]]:
+        """ Returns the tuple of dictionaries containing edge start, end and its name. """
         results = []
         for edge in self.diagram.diagram_graph.edges(data=True):
             edge_name = edge[2].get("name", "") or "Unnamed"
@@ -143,10 +170,15 @@ class ContextGenerator:
         return tuple(results)
 
     def get_node_names_of_type(self, node_type: str) -> tuple:
+        """ Returns tuple of nodes of given type. """
         node_ids = self.diagram.get_nodes_id_list_by_type(node_type)
         return tuple(self.id_mappings[node_id] for node_id in node_ids)
 
-    def get_nodes(self):
+    def get_nodes(self) -> tuple[tuple[str, dict]]:
+        """
+        Returns tuple of pairs [node_name, node_dict].
+        Removes unnecessary data according to key_to_remove.
+        """
         nodes = self.diagram.get_nodes()
         nodes_data = []
         for _, node_dict in nodes:
@@ -163,18 +195,16 @@ class ContextGenerator:
                     value = ", ".join(value)
                 node_dict[key] = value or "No data provided."
             nodes_data.append((name, node_dict))
-        return nodes_data
+        return tuple(nodes_data)
 
 
 def generate_pdf_report(bpmn_file: str) -> None:
+    """ Helper function used to generate pdf report using ReportGenerator class. """
     report_generator = ReportGenerator.from_file(bpmn_file)
     report_generator.generate_pdf_report()
 
 
 def generate_html_report(bpmn_file: str) -> None:
+    """ Helper function used to generate html report using ReportGenerator class. """
     report_generator = ReportGenerator.from_file(bpmn_file)
     report_generator.generate_html_report()
-
-
-if __name__ == '__main__':
-    generate_pdf_report("../examples/01_Obsluga_zgloszen.bpmn")
