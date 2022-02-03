@@ -1,11 +1,10 @@
-from bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
-from bpmn_python.bpmn_python_consts import Consts
-
+import networkx as nx
 import matplotlib
 matplotlib.use('Qt5Agg')
-
-import networkx as nx
 import matplotlib.pyplot as plt
+
+from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
+from src.bpmn_python.bpmn_python_consts import Consts
 
 
 class DiagramVisualizer:

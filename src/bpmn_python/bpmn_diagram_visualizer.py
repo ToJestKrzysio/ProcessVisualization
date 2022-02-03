@@ -5,9 +5,10 @@ BPMN diagram visualization methods
 import matplotlib.pyplot as plt
 import networkx as nx
 import pydotplus
-import bpmn_python.bpmn_python_consts as consts
 
 from networkx.drawing.nx_pydot import write_dot
+
+from . import bpmn_python_consts as consts
 
 
 def visualize_diagram(bpmn_diagram):

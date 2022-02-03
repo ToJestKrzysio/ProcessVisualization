@@ -3,11 +3,12 @@ from __future__ import annotations
 import base64
 import datetime
 import os.path
+from pathlib import Path
 
 from jinja2 import FileSystemLoader, Environment
 import pdfkit
 
-import bpmn_python.bpmn_python_consts as consts
+import src.bpmn_python.bpmn_python_consts as consts
 from src.bpmn_python.bpmn_diagram_rep import BpmnDiagramGraph
 from src.visualizer import DiagramVisualizer
 
@@ -24,6 +25,7 @@ class ReportGenerator:
         self.report_path = "reports"
         self.context_generator = ContextGenerator(self.diagram)
         self.visualizer = DiagramVisualizer(self.diagram)
+        self.file_name = None
         if not os.path.exists(self.report_path):
             os.mkdir(self.report_path)
 
@@ -32,7 +34,9 @@ class ReportGenerator:
         """ Loads BPMN model form .xml/.bpmn file and returns new instance of ReportGenerator. """
         diagram = BpmnDiagramGraph()
         diagram.load_diagram_from_xml_file(file_path)
-        return cls(diagram)
+        instance = cls(diagram)
+        instance.file_name = Path(file_path).stem
+        return instance
 
     def generate_html_report(self, save=True) -> str:
         """
@@ -48,7 +52,7 @@ class ReportGenerator:
                 html_file.write(rendered_template)
         return rendered_template
 
-    def generate_pdf_report(self) -> None:
+    def generate_pdf_report(self, wkhtmltopdf_path=None) -> None:
         """
         Generates pdf report using string representation of html_report and saves it to
         pdf_report_path.
@@ -63,8 +67,10 @@ class ReportGenerator:
             'no-outline': None,
             'enable-local-file-access': None
         }
+
+        config = {"configuration": pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)} if wkhtmltopdf_path else {}
         html_file = self.generate_html_report(save=False)
-        pdfkit.from_string(html_file, self.pdf_report_path, options=options)
+        pdfkit.from_string(html_file, self.pdf_report_path, options=options, **config)
 
     @property
     def base_path(self) -> str:
@@ -73,7 +79,8 @@ class ReportGenerator:
         Every report name contains date of report generation.
         """
         date = datetime.date.today().strftime("%d_%m_%Y")
-        return f"{self.report_path}/report_{date}"
+        file_name = f"_{self.file_name}" if self.file_name else ""
+        return f"{self.report_path}/report_{date}{file_name}"
 
     @property
     def html_report_path(self) -> str:
@@ -198,10 +205,10 @@ class ContextGenerator:
         return tuple(nodes_data)
 
 
-def generate_pdf_report(bpmn_file: str) -> None:
+def generate_pdf_report(bpmn_file: str, wkhtmltopdf_path=None) -> None:
     """ Helper function used to generate pdf report using ReportGenerator class. """
     report_generator = ReportGenerator.from_file(bpmn_file)
-    report_generator.generate_pdf_report()
+    report_generator.generate_pdf_report(wkhtmltopdf_path)
 
 
 def generate_html_report(bpmn_file: str) -> None:
